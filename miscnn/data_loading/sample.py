@@ -50,6 +50,7 @@ class Sample:
         self.classes = classes
         self.shape = self.img_data.shape
         self.extended = extended
+        self.details = {"refCntr" : 0}
 
     # Add and preprocess a segmentation annotation
     def add_segmentation(self, seg):
@@ -66,6 +67,20 @@ class Sample:
     def get_extended_data(self):
         return self.extended
 
+    # Add optional information / details for custom usage that is inherited
+    def add_extended_data(self, extended):
+        self.extended = {**self.extended, **extended}
     # Add optional information / details for custom usage
     def add_details(self, details):
-        self.details = details
+        self.details = {**self.details, **details}
+    
+    #creates a copy of the sample object. This only stores the references to the data. Furthermore it does not copy the details property as contains data that should not be inherited by child samples
+    def copy(self):
+        smpl = Sample(self.index + "_" + str(self.details["refCntr"]), self.img_data, self.channels, self.classes, self.extended)
+        self.details["refCntr"] += 1 #only point is to keep names unique
+        smpl.add_details({"parent":self.index})
+        #this is a copy by reference. there is no reason to not copy it. and it allows seperate evaluation. 
+        #The add functions are not used as they would potentially double apply transformations
+        smpl.seg_data = self.seg_data
+        smpl.pred_data = self.pred_data
+        return smpl
