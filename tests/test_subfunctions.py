@@ -421,6 +421,47 @@ class SubfunctionsTEST(unittest.TestCase):
             self.assertTrue(np.array_equal(pred, sample_pred.pred_data))
 
     #-------------------------------------------------#
+    #                    Mirroring                    #
+    #-------------------------------------------------#
+    def test_SUBFUNCTIONS_MIRRORING_preprocessing(self):
+        # Initialize Subfunction
+        sf = Mirroring([True, True])
+        # Test for 2D and 3D
+        for dim in ["2D", "3D"]:
+            # Test for training as well as prediction
+            for train in [True, False]:
+                # Create sample object from template
+                varname = "sample" + dim
+                if train : varname += "seg"
+                sample = deepcopy(getattr(self, varname))
+                # Run preprocessing of the subfunction
+                
+                results = sf.preprocessing(sample, training=train)
+                # Check for correctness
+                for r in results:
+                    self.assertTrue(np.array_equal(np.flip(r.img_data, tuple(r.get_extended_data()["mirroring"])),
+                                    getattr(self, varname).img_data))
+
+    def test_SUBFUNCTIONS_MIRRORING_postprocessing(self): #this is essentially a check if the pre and post operations are equivalent. as they are flips that proves that the output is the same as the input
+        # Initialize Subfunction
+        sf = Mirroring([True, True])
+        # Test for 2D and 3D
+        for dim in ["2D", "3D"]:
+            # Test for training as well as prediction
+            for train in [True, False]:
+                # Create sample object from template
+                varname = "sample" + dim
+                if train : varname += "seg"
+                sample = deepcopy(getattr(self, varname))
+                # Run preprocessing of the subfunction
+                sample.pred_data = sample.img_data
+                results = sf.preprocessing(sample, training=train)
+                for r in results:
+                    r.pred_data = sf.postprocessing(r, r.pred_data)
+                    # Check for correctness
+                    self.assertTrue(np.array_equal(r.img_data,r.pred_data))
+
+    #-------------------------------------------------#
     #                  Normalization                  #
     #-------------------------------------------------#
     def test_SUBFUNCTIONS_NORMALIZATION_preprocessing(self):
