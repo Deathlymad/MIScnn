@@ -90,6 +90,8 @@ class Padding(Abstract_Subfunction):
         # Save resampled imaging data to sample
         sample.img_data = img_data
         sample.seg_data = seg_data
+        
+        return [sample]
 
     #---------------------------------------------#
     #               Postprocessing                #

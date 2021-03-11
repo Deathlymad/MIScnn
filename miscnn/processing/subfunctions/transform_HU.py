@@ -92,6 +92,7 @@ class TransformHU(Abstract_Subfunction):
 
         #Update sample values
         sample.img_data = img_data
+        return [sample]
 
 
     def normalize_HU(self, image):

@@ -52,6 +52,7 @@ class Clipping(Abstract_Subfunction):
         image_clipped = np.clip(image, self.min, self.max)
         # Update the sample with the normalized image
         sample.img_data = image_clipped
+        return [sample]
 
     #---------------------------------------------#
     #               Postprocessing                #

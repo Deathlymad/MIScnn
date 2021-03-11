@@ -76,6 +76,7 @@ class Normalization(Abstract_Subfunction):
         else : raise NameError("Subfunction - Normalization: Unknown modus")
         # Update the sample with the normalized image
         sample.img_data = image_normalized
+        return [sample]
 
     #---------------------------------------------#
     #               Postprocessing                #

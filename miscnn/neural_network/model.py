@@ -214,7 +214,7 @@ class Neural_Network:
                                     training=False, validation=False,
                                     shuffle=False, iterations=None)
             
-            sampleObj = self.preprocessor.data_io.sample_loader(sample, load_seg=False); #TODO optimize
+            sampleObj = self.preprocessor.data_io.sample_loader(sample, load_seg=False); #TODO This potentially drops crucial data
             # Run prediction process with Keras predict
             pred_list = []
             for batch in dataGen:

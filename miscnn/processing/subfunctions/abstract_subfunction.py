@@ -21,17 +21,20 @@
 #-----------------------------------------------------#
 # External libraries
 from abc import ABC, abstractmethod
+import typing
 
 #-----------------------------------------------------#
 #     Abstract Interface for the Subfunction class    #
 #-----------------------------------------------------#
 """ An abstract base class for a processing Subfcuntion class.
-
 Methods:
     __init__                Object creation function
     preprocessing:          Transform the imaging data
     postprocessing:         Transform the predicted segmentation
 """
+
+T = typing.TypeVar('T')  # Can be anything
+
 class Abstract_Subfunction(ABC):
     #---------------------------------------------#
     #                   __init__                  #
@@ -66,7 +69,7 @@ class Abstract_Subfunction(ABC):
             None
     """
     @abstractmethod
-    def preprocessing(self, sample, training=True):
+    def preprocessing(self, sample : T, training=True) -> typing.Sequence[T]:
         pass
     #---------------------------------------------#
     #                postprocessing               #
@@ -83,5 +86,5 @@ class Abstract_Subfunction(ABC):
             prediction (numpy array):   Numpy array of processed predicted segmentation
     """
     @abstractmethod
-    def postprocessing(self, sample, prediction):
+    def postprocessing(self, sample : typing.Sequence[T], prediction) -> typing.Sequence[T]:
         return prediction

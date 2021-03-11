@@ -64,6 +64,7 @@ class Resize(Abstract_Subfunction):
         # Save resized imaging data to sample
         sample.img_data = img_data
         sample.seg_data = seg_data
+        return [sample]
 
     #---------------------------------------------#
     #               Postprocessing                #

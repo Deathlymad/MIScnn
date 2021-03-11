@@ -241,17 +241,22 @@ class Preprocessor:
 
     # Wrapper function to process subfunctions for a single sample
     def prepare_sample_subfunctions(self, index, training):
-        # Load sample
-        sample = self.data_io.sample_loader(index, load_seg=training)
+        # Load sample as root
+        res_samples = [self.data_io.sample_loader(index, load_seg=training)]
         # Run provided subfunctions on imaging data
         for sf in self.subfunctions:
-            sf.preprocessing(sample, training=training)
+            newSamples = []
+            for sample in res_samples:
+                newSamples.extend(sf.preprocessing(sample, training=training))
+            res_samples = newSamples
+        print ([s.index for s in res_samples])
         # Transform array data types in order to save disk space
-        sample.img_data = np.array(sample.img_data, dtype=np.float32)
-        if training:
-            sample.seg_data = np.array(sample.seg_data, dtype=np.uint8)
-        # Backup sample as pickle to disk
-        self.data_io.backup_sample(sample)
+        for sample in res_samples:
+            sample.img_data = np.array(sample.img_data, dtype=np.float32)
+            if training:
+                sample.seg_data = np.array(sample.seg_data, dtype=np.uint8)
+            # Backup sample as pickle to disk
+            self.data_io.backup_sample(sample)
 
     #---------------------------------------------#
     #           Patch-wise grid Analysis          #
