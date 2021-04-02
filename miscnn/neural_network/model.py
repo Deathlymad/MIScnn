@@ -118,9 +118,11 @@ class Neural_Network:
         epochs (integer):                       Number of epochs. A single epoch is defined as one iteration through
                                                 the complete data set.
         iterations (integer):                   Number of iterations (batches) in a single epoch.
-        callbacks (list of Callback classes):   A list of Callback classes for custom evaluation
+        callbacks (list of Callback classes):   A list of Callback classes for custom evaluation.
+        class_weight (dictionary or list):      A list or dictionary of float values to handle class unbalance.
     """
-    def train(self, sample_list, epochs=20, iterations=None, callbacks=[]):
+    def train(self, sample_list, epochs=20, iterations=None, callbacks=[],
+              class_weight=None):
         # Initialize Keras Data Generator for generating batches
         dataGen = DataGenerator(sample_list, self.preprocessor, training=True,
                                 validation=False, shuffle=self.shuffle_batches,
@@ -129,6 +131,7 @@ class Neural_Network:
         self.model.fit(dataGen,
                        epochs=epochs,
                        callbacks=callbacks,
+                       class_weight=class_weight,
                        workers=self.workers,
                        max_queue_size=self.batch_queue_size)
         # Clean up temporary files if necessary
@@ -142,7 +145,7 @@ class Neural_Network:
         for the provided list of sample indices.
 
     Args:
-        sample_list (list of indices):  A list of sample indicies for which a segmentation prediction will be computed
+        sample_list (list of indices):  A list of sample indicies for which a segmentation prediction will be computed.
         return_output (boolean):        Parameter which decides, if computed predictions will be output as the return of this
                                         function or if the predictions will be saved with the save_prediction method defined
                                         in the provided Data I/O interface.
@@ -177,6 +180,55 @@ class Neural_Network:
         # Output predictions results if direct output modus is active
         if return_output : return results
 
+
+    #---------------------------------------------#
+    #            Augmentated Prediction           #
+    #---------------------------------------------#
+    """ Prediction function for the Neural Network model, which utilizes augmentation on prediction data.
+        The model will compute multiple predictions for a single image via flipping.
+
+        In contrast to the standard prediction function, this one will always return a list
+        of augmentated predictions with acvtivation output for a single sample.
+
+    Args:
+        sample (string):                A sample index for which a segmentation prediction will be computed.
+    """
+    def predict_augmentated(self, sample):
+        if self.preprocessor.data_augmentation is None:
+            raise ValueError("Inference Augmentation requires a " + \
+                             "Data Augmentation class instance!")
+        else : data_aug = self.preprocessor.data_augmentation
+        # Initialize result array for the augmentated predictions
+        results = []
+        # Activate augmentation inferene
+        data_aug.infaug = True
+        if self.three_dim : flip_list = data_aug.infaug_flip_list
+        else : flip_list = data_aug.infaug_flip_list[:-1]
+        # Compute inference for each flip augmentation / for each axis
+        for flip_axis in flip_list:
+            # Update flip axis
+            data_aug.infaug_flip_current = flip_axis
+            # Initialize Keras Data Generator for generating batches
+            dataGen = DataGenerator([sample], self.preprocessor,
+                                    training=False, validation=False,
+                                    shuffle=False, iterations=None)
+            # Run prediction process with Keras predict
+            pred_list = []
+            for batch in dataGen:
+                pred_batch = self.model.predict_on_batch(batch)
+                pred_list.append(pred_batch)
+            pred_seg = np.concatenate(pred_list, axis=0)
+            # Postprocess prediction
+            pred_seg = self.preprocessor.postprocessing(sample, pred_seg,
+                                                        activation_output=True)
+            # Backup predicted segmentation for current augmentation
+            results.append(pred_seg)
+        # Reset inference augmentation modus
+        data_aug.infaug = False
+        data_aug.infaug_flip_current = None
+        # Return result array
+        return results
+
     #---------------------------------------------#
     #                 Evaluation                  #
     #---------------------------------------------#
@@ -195,7 +247,7 @@ class Neural_Network:
     """
     # Evaluate the Neural Network model using the MIScnn pipeline
     def evaluate(self, training_samples, validation_samples, epochs=20,
-                 iterations=None, callbacks=[]):
+                 iterations=None, callbacks=[], class_weight=None):
         # Initialize a Keras Data Generator for generating Training data
         dataGen_training = DataGenerator(training_samples, self.preprocessor,
                                          training=True, validation=False,
@@ -211,6 +263,7 @@ class Neural_Network:
                                  validation_data=dataGen_validation,
                                  callbacks=callbacks,
                                  epochs=epochs,
+                                 class_weight=class_weight,
                                  workers=self.workers,
                                  max_queue_size=self.batch_queue_size)
         # Clean up temporary files if necessary
