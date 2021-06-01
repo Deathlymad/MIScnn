@@ -107,7 +107,7 @@ class NIFTIslicer_interface(Abstract_IO):
         # Obtain slice from volume
         img_data = np.take(vol_data, int(ind_slice), axis=self.slice_axis)
         # Return volume
-        return img_data
+        return img_data, {"type":"nifti_slice", "affine":vol.affine}
 
     #---------------------------------------------#
     #              load_segmentation              #
@@ -156,12 +156,6 @@ class NIFTIslicer_interface(Abstract_IO):
         return pred_data
 
     #---------------------------------------------#
-    #                 load_details                #
-    #---------------------------------------------#
-    def load_details(self, i):
-        pass
-
-    #---------------------------------------------#
     #               save_prediction               #
     #---------------------------------------------#
     # Write a segmentation prediction into in the NPY file format
@@ -174,3 +168,10 @@ class NIFTIslicer_interface(Abstract_IO):
         # Save segmentation to disk as a NumPy pickle
         pred_path = os.path.join(output_path, str(index) + ".npy")
         np.save(pred_path, pred, allow_pickle=True)
+
+    #---------------------------------------------#
+    #           check_file_termination            #
+    #---------------------------------------------#
+    @staticmethod
+    def check_file_termination(termination):
+        return termination in [".nii.gz"]
