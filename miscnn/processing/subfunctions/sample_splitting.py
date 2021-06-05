@@ -28,12 +28,12 @@ from miscnn.utils.patch_operations import slice_matrix, concat_matrices, pad_pat
 #-----------------------------------------------------#
 #             Subfunction class: Clipping             #
 #-----------------------------------------------------#
-""" A Clipping Subfunction class which can be used for clipping intensity pixel values on a certain range.
+""" The patch creation function. It splits an image into subimages that are reassembeled afterwards.
 
 Methods:
     __init__                Object creation function
-    preprocessing:          Clipping the imaging data
-    postprocessing:         Do nothing
+    preprocessing:          Split the sample image into an array of subimages. That leads to a shape change from (x, y, z, c) to (batch_size, x, y, z, c)
+    postprocessing:         merge the patches back together into one image.
 """
 class SampleSplitting(Abstract_Subfunction):
     #---------------------------------------------#
@@ -52,7 +52,6 @@ class SampleSplitting(Abstract_Subfunction):
         
         self.three_dim=three_dim
         self.method = method
-        self.cache = dict()                                 # Cache additional information and data for patch assembling after patchwise prediction
         
         #TODO check if the following is relevant
         
@@ -79,7 +78,7 @@ class SampleSplitting(Abstract_Subfunction):
         # Run patchwise grid analysis
         else:
             if not training:
-                self.cache["shape_" + str(index)] = sample.img_data.shape
+                sample.extended["patch_orig_shape"] = sample.img_data.shape
             self.analysis_patchwise_grid(sample, training)
 
     #---------------------------------------------#
@@ -89,11 +88,10 @@ class SampleSplitting(Abstract_Subfunction):
         if self.method == "patchwise-crop" or \
             self.method == "patchwise-grid":
             # Check if patch was padded
-            slice_key = "slicer_" + str(sample.index)
-            if slice_key in self.cache:
-                prediction = crop_patch(prediction, self.cache[slice_key])
+            if "patch_orig_slice" in sample.extended.keys():
+                prediction = crop_patch(prediction, sample.extended["patch_orig_slice"])
             # Load cached shape & Concatenate patches into original shape
-            seg_shape = self.cache.pop("shape_" + str(sample.index))
+            seg_shape = sample.extended["patch_orig_shape"]
             prediction = concat_matrices(patches=prediction,
                                     image_size=seg_shape,
                                     window=self.patch_shape,
@@ -135,7 +133,7 @@ class SampleSplitting(Abstract_Subfunction):
         elif img_data.shape[1:-1] != self.patch_shape and not training:
             img_data, slicer = pad_patch(img_data, self.patch_shape,
                                          return_slicer=True)
-            self.cache["slicer_" + str(sample.index)] = slicer
+            sample.extended["patch_orig_slice"] = slicer
         # Run data augmentation
         if (self.data_aug is not None) and training:
             img_data, seg_data = self.data_aug.run(img_data, seg_data)
